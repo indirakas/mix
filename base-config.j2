@@ -1,0 +1,158 @@
+version 15.0
+no service pad
+service timestamps debug datetime localtime show-timezone
+service timestamps log datetime localtime show-timezone
+service password-encryption
+!
+hostname {{data.hostname}}
+!
+boot-start-marker
+boot-end-marker
+!
+aaa new-model
+!
+!
+aaa authentication enable default enable
+!
+!
+!
+!
+!
+!
+aaa session-id common
+switch 1 provision ws-c2960xr-48td-i
+system mtu routing 1500
+!
+!
+no ip domain-lookup
+ip domain-name bar.com
+vtp mode off
+!
+!
+!
+spanning-tree mode pvst
+spanning-tree portfast default
+spanning-tree extend system-id
+!
+!
+!
+!         
+!
+errdisable recovery cause udld
+errdisable recovery cause bpduguard
+errdisable recovery cause security-violation
+errdisable recovery cause channel-misconfig (STP)
+errdisable recovery cause pagp-flap
+errdisable recovery cause dtp-flap
+errdisable recovery cause link-flap
+errdisable recovery cause sfp-config-mismatch
+errdisable recovery cause gbic-invalid
+errdisable recovery cause l2ptguard
+errdisable recovery cause psecure-violation
+errdisable recovery cause port-mode-failure
+errdisable recovery cause dhcp-rate-limit
+errdisable recovery cause pppoe-ia-rate-limit
+errdisable recovery cause mac-limit
+errdisable recovery cause vmps
+errdisable recovery cause storm-control
+errdisable recovery cause inline-power
+errdisable recovery cause arp-inspection
+errdisable recovery cause loopback
+errdisable recovery cause small-frame
+errdisable recovery cause psp
+errdisable recovery interval 60
+!
+!
+!
+!
+vlan internal allocation policy ascending
+!
+vlan 2001
+ name foo
+!
+vlan 2002
+ name bar
+!
+ip ssh version 2
+!
+! 
+!
+!
+!
+!
+!
+!
+!
+!
+interface Port-channel1
+ description dist-sw1:{{data.port}}
+ switchport mode trunk
+ spanning-tree portfast disable
+ spanning-tree bpdufilter enable
+!
+interface FastEthernet0
+ no ip address
+ shutdown
+!
+{% for n in range (49) %}
+interface GigabitEthernet1/0/{{n+1}}
+{% if n<40 %}
+ switchport access vlan {{data.vlan}}
+ switchport mode access
+{% else %}
+ switchport access vlan 2001
+ switchport mode access
+{% endif %}
+!
+{% endfor %}
+!
+{% for u in range (2) %}
+interface TenGigabitEthernet1/0/{{u+1}}
+ switchport mode trunk
+ shutdown
+ spanning-tree portfast disable
+ spanning-tree bpdufilter enable
+ channel-group 1 mode on
+!
+{% endfor %}
+!
+interface Vlan1
+ no ip address
+ shutdown
+!
+interface Vlan2001
+ description Management
+ ip address {{data.ipaddress}} 255.255.240.0
+!
+interface Vlan {{data.vlan}}
+{% if data.vlan == 2001 %}
+ description foo
+ no ip address
+{% elif data.vlan == 2002 %}
+ description bar
+ no ip address
+{% endif %}
+!
+no ip http server
+no ip http secure-server
+!
+!
+logging facility local6
+logging host 10.0.0.10
+!
+snmp-server community blah RO 13
+snmp-server community blah1 RW 13
+snmp-server contact foo@bar.com
+!
+!
+!
+!
+line con 0
+line vty 5 15
+ access-class 1 in
+ transport input ssh
+!
+ntp server 1.1.1.1
+ntp server 2.2.2.2
+ntp server 3.3.3.3
+end

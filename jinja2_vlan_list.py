@@ -110,7 +110,7 @@ def main():
                 
         elif vendor == "brocade":
                 vdx_switch=BrocadeSwitchData()
-                template = ENV.get_template("base-config_brocade_vlan_rbstart.j2")
+                template = ENV.get_template("base-config-brocade.j2")
                 version_list=["4.1.3c","5.0.2a"]
                 ivlan_list=[1,2,3]
                 pvlan_list=[11,22,33]

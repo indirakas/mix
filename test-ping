@@ -1,12 +1,14 @@
 #!/bin/bash
+#creates a list of switches
 declare -A SWITCH
-#SWITCH='name1'
-#SWITCH='name2'
-#SWITCH='name3'
-
-#SWITCH='osf'
+SWITCH='name1'
+SWITCH='name2'
+SWITCH='name3'
+SWITCH='osf'
 SWITCH='crt'
+#the following file contains a list of servers (either with FQDN or IP address), connected to a switch
 IPLIST="/data/tftpboot/ping/$SWITCH"
+#runs 100 pings and returns "ok" or "fail" for each IP address it pings
 for i in {1..100}
 do
 echo""

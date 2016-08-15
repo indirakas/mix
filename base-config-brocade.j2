@@ -1,0 +1,346 @@
+{% for r in range (0,data.rbridge) %}
+diag post rbridge-id {{r+data.rbridge_start}}
+ enable
+!
+{% endfor %}
+no fsb enable
+{% if data.model == "6740" or "6740T" %}
+hardware
+{% for r in range (0,data.rbridge) %}
+ connector {{r+data.rbridge_start}}/0/49
+  sfp breakout
+ !
+{% endfor %}
+{% for r in range (0,data.rbridge) %}
+{% if data.model == "6740" %}
+ connector-group {{r+data.rbridge_start}}/0/1
+  speed LowMixed
+ !
+ connector-group {{r+data.rbridge_start}}/0/3
+  speed LowMixed
+ !
+ connector-group {{r+data.rbridge_start}}/0/5
+  speed LowMixed
+ !
+ connector-group {{r+data.rbridge_start}}/0/6
+  speed LowMixed
+ !
+{% endif %}
+{% endfor %}
+!
+{% endif %}
+{% if data.model == "6720" or "6740" or "6740T" %}
+{% for r in range (0,data.rbridge) %}
+{% for p in range (0,data.inter) %}
+dpod {{r+data.rbridge_start}}/0/{{p+1}}
+{% for i in range (0,data.sum1.values()[r].keys()|length) %}
+{% if ((p+1)>=data.sum1.values()[r].values()[i][0] and (p+1)<=data.sum1.values()[r].values()[i][1]) %}
+ reserve
+{% endif %}
+{% endfor %}
+{% if ((p+1)>=data.sum2_list[1][0] and (p+1)<=data.sum2_list[1][1]) %}
+ reserve
+{% endif %}
+!
+{% endfor %}
+{% endfor %}
+{% endif %}
+ntp server 1.1.1.1
+ntp server 2.2.2.2
+ntp server 3.3.3.3
+logging raslog console INFO
+{% if data.version == "5.0.2a" %}
+logging syslog-server 4.4.4.4 use-vrf mgmt-vrf
+{% else %}
+logging syslog-server 4.4.4.4
+{% endif %}
+!
+logging auditlog class SECURITY
+logging auditlog class CONFIGURATION
+logging auditlog class FIRMWARE
+logging syslog-facility local LOG_LOCAL6
+logging syslog-client localip MM_IP
+{% for r in range (0,data.rbridge) %}
+switch-attributes {{r+data.rbridge_start}}
+ chassis-name Brocade VDX {{data.model}}
+ host-name {{data.hostname[r]}}
+!
+{% endfor %}
+no support autoupload enable
+support ffdc
+snmp-server contact net@nersc.gov
+snmp-server location "End User Premise."
+snmp-server sys-descr "Brocade VDX Switch."
+{%if data.version == "5.0.2a" %}
+snmp-server enable trap
+snmp-server community c0m3l00katm3 groupname user
+snmp-server community fe3lmyp0w3r groupname admin
+snmp-server view All 1 included
+snmp-server group admin v1 read All write All notify All
+snmp-server group admin v2c read All write All notify All
+snmp-server group snmpadmin v3 notify All
+snmp-server group snmpuser v3 notify All
+snmp-server group user v1 read All notify All
+snmp-server group user v2c read All notify All
+{%else %}
+snmp-server community c0m3l00katm3
+snmp-server community fe3lmyp0w3r rw
+snmp-server user snmpadmin1 groupname snmpadmin
+snmp-server user snmpadmin2 groupname snmpadmin
+snmp-server user snmpadmin3 groupname snmpadmin
+snmp-server user snmpuser1
+snmp-server user snmpuser2
+snmp-server user snmpuser3
+{% endif %}
+line vty
+ exec-timeout 10
+!
+vcs virtual ip address {{data.ipaddress}}/20
+zoning enabled-configuration cfg-name ""
+zoning enabled-configuration default-zone-access allaccess
+zoning enabled-configuration cfg-action cfg-save
+role name admin desc Administrator
+role name netadmin desc NetworkAdministator
+role name user desc User
+aaa authentication login local
+aaa accounting exec default start-stop none
+aaa accounting commands default start-stop none
+service password-encryption
+cee-map default
+ precedence 1
+ priority-group-table 1 weight 40 pfc on
+ priority-group-table 15.0 pfc off
+ priority-group-table 15.1 pfc off
+ priority-group-table 15.2 pfc off
+ priority-group-table 15.3 pfc off
+ priority-group-table 15.4 pfc off
+ priority-group-table 15.5 pfc off
+ priority-group-table 15.6 pfc off
+ priority-group-table 15.7 pfc off
+ priority-group-table 2 weight 60 pfc off
+ priority-table 2 2 2 1 2 2 2 15.0
+ remap fabric-priority priority 0
+ remap lossless-priority priority 0
+!
+fcoe
+ fabric-map default
+  vlan 1002
+  priority 3
+  virtual-fabric 128
+  fcmap 0E:FC:00
+  max-enodes 0
+  enodes-config local
+  advertisement interval 8000
+  keep-alive timeout
+ !
+ map default
+  fabric-map default
+  cee-map default
+ !
+!
+interface Vlan 1
+!
+{% for vlan in data.vlans %}
+interface Vlan {{vlan}}
+!
+{% endfor %}
+{% for r in range (0,data.rbridge) %}
+fabric route mcast rbridge-id {{r+data.rbridge_start}}
+!
+{% endfor %}
+!
+protocol lldp
+ advertise dcbx-fcoe-app-tlv
+ advertise dcbx-fcoe-logical-link-tlv
+ advertise dcbx-tlv
+ system-description Brocade VDX switch
+!
+vlan dot1q tag native
+port-profile UpgradedVlanProfile
+ vlan-profile
+  switchport
+  switchport mode trunk
+  switchport trunk allowed vlan all
+ !
+!
+port-profile default
+ vlan-profile
+  switchport
+  switchport mode trunk
+  switchport trunk native-vlan 1
+ !      
+!
+port-profile-domain default
+ port-profile UpgradedVlanProfile
+!
+class-map cee
+!
+class-map default
+!
+{% for r in range (0,data.rbridge) %}
+rbridge-id {{r+data.rbridge_start}}
+{% if data.version == "5.0.2a" %}
+ switch-attributes chassis-name Brocade VDX {{data.model}}
+ switch-attributes host-name {{data.hostname[r]}}
+ vrf mgmt-vrf
+  address-family ipv4 unicast
+   ip route 0.0.0.0/0 5.5.5.5
+  !
+  address-family ipv6 unicast
+  !
+ !
+{% else %}
+ ip route 0.0.0.0/0 5.5.5.5
+ switch-attributes chassis-name Brocade VDX {{data.model}}
+ switch-attributes host-name {{data.hostname[r]}}
+{% endif %}
+ system-monitor fan threshold marginal-threshold 1 down-threshold 2
+ system-monitor fan alert state removed action raslog
+ system-monitor power threshold marginal-threshold 1 down-threshold 2
+ system-monitor power alert state removed action raslog
+ system-monitor temp threshold marginal-threshold 1 down-threshold 2
+ system-monitor cid-card threshold marginal-threshold 1 down-threshold 2
+ system-monitor cid-card alert state none action none
+ system-monitor sfp alert state none action none
+ system-monitor compact-flash threshold marginal-threshold 1 down-threshold 0
+ system-monitor MM threshold marginal-threshold 1 down-threshold 2
+ system-monitor LineCard threshold marginal-threshold 1 down-threshold 2
+ system-monitor LineCard alert state none action none
+ system-monitor SFM threshold marginal-threshold 1 down-threshold 2
+ no protocol vrrp
+ no protocol vrrp-extended
+{% if data.version =="5.0.2a" %}
+ hardware-profile tcam default
+ hardware-profile route-table default
+ clock timezone America/Los_Angeles
+ logical-chassis principal-priority 1
+ ssh server key rsa 2048
+ ssh server key ecdsa 256
+ ssh server key dsa
+{% else %}
+ logical-chassis principal-priority {{r+data.rbridge_start}}
+{% endif %}
+ http server shutdown
+ fcoe   
+  fabric-map default
+   fcoe-enodes 0
+  !
+ !
+{% endfor %}
+!
+{% for r in range (0,data.rbridge) %}
+interface Management {{r+data.rbridge_start}}/0
+ no tcp burstrate
+ ip icmp unreachable
+ ip icmp echo-reply
+ no ip address dhcp
+ ip address {{data.mgmt_ip[r]}}/20
+ ipv6 icmpv6 unreachable
+ ipv6 icmpv6 echo-reply
+ no ipv6 address autoconfig
+ no ipv6 address dhcp
+{% if data.version =="5.0.2a" %}
+ vrf forwarding mgmt-vrf
+{% endif %}
+!
+{% endfor %}
+{% set d=0 %}
+{% for r in range (0,data.rbridge) %}
+{% if r % 2 ==0 %}
+{% set d=r %}
+{% else %}
+{% set d=r-1 %}
+{% endif %}
+{% for p in range (0,data.inter) %}
+{% if data.model == "6720" %}
+interface TenGigabitEthernet {{r+data.rbridge_start}}/0/{{p+1}}
+{% elif data.model == "6710" %}
+{% if p < 49 %}
+interface GigabitEthernet {{r+data.rbridge_start}}/0/{{p+1}}
+{% else %}
+interface TenGigabitEthernet {{r+data.rbridge_start}}/0/{{p+1}}
+{% endif %}
+{% elif data.model == "6740" or "6740T" %}
+{% if (p+1) < 49 %}
+interface TenGigabitEthernet {{r+data.rbridge_start}}/0/{{p+1}}
+{% elif (p+1) == 49 %}
+{% for i in range (0,4) %}
+interface TenGigabitEthernet {{r+data.rbridge_start}}/0/49:{{i+1}}
+ fabric isl enable
+ fabric trunk enable
+{% if (49>=data.sum2_list[1][0] and 49<=data.sum2_list[1][1]) and (r==0 or r==1)%}
+ channel-group {{d+data.rbridge_start}}49 mode on type standard
+{% endif %}
+ no shutdown
+!
+{% endfor %}
+{% else %}
+{% if data.model == "6740" %}
+interface FortyGigabitEthernet {{r+data.rbridge_start}}/0/{{p+1}}
+{% endif %}
+{% endif %}
+{% endif %}
+{% if (p+1)!=49 %}
+{% if data.model == "6740T" %}
+ speed 1000
+{% endif %}
+ fabric isl enable
+ fabric trunk enable
+{% if ((p+1)>=data.sum2_list[1][0] and (p+1)<=data.sum2_list[1][1]) %}
+{% if (p+1)<10 and (p+1)<10 %}
+ channel-group {{d+data.rbridge_start}}0{{p+1}} mode on type standard
+{% else %}
+ channel-group {{d+data.rbridge_start}}{{p+1}} mode on type standard
+{% endif %}
+{% endif %}
+{% for (keys,(value1,value2)) in data.sum1.values()[d].items() %}
+{% if (p+1)>=value1 and (p+1)<=value2 %}
+{% if (p+1)<10 and (p+1)<10 %}
+ channel-group {{d+data.rbridge_start}}0{{p+1}} mode on type standard
+{% else %}
+ channel-group {{d+data.rbridge_start}}{{p+1}} mode on type standard
+{% endif %}
+{% endif %}
+{% endfor %}
+ no shutdown
+!
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% for d in range (0,data.rbridge,2) %}
+{% for p in range (0,data.inter) %}
+{% if ((p+1)>=data.sum2_list[1][0] and (p+1)<=data.sum2_list[1][1]) and (r==0 or r==1)  %}
+{% if (p+1)<10 and (d+data.rbridge_start)<10 %}
+interface Port-channel {{d+data.rbridge_start}}0{{p+1}}
+{% else %}
+interface Port-channel {{d+data.rbridge_start}}{{p+1}}
+{% endif %}
+ no vlag ignore-split
+ mtu 9216
+ switchport
+ switchport mode trunk
+ switchport trunk allowed vlan add {% for vlan in data.sum2_list[0][:-1] %}{{vlan}},{% endfor %}{{data.sum2_list[0][-1]}}
+ switchport trunk tag native-vlan
+ spanning-tree shutdown
+ no shutdown
+!
+{% endif %}
+{% for keys,(value1,value2) in data.sum1.values()[d].items() %}
+{% if ((p+1)>=value1 and (p+1)<=value2) %}
+{% if (p+1)<10 and (d+data.rbridge_start)<10 %}
+interface Port-channel {{d+data.rbridge_start}}0{{p+1}}
+{% else %}
+interface Port-channel {{d+data.rbridge_start}}{{p+1}}
+{% endif %}
+ no vlag ignore-split
+ mtu 9216
+ switchport
+ switchport mode access
+ switchport access vlan {{keys}}
+ spanning-tree shutdown
+ no shutdown
+!
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endfor %}

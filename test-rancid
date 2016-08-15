@@ -1,0 +1,18 @@
+#!/usr/local/bin/bash
+declare -A LIST
+DIR='/var/tmp/diffs'
+
+LIST[0]='name1'
+LIST[1]='name2'
+LIST[18]='name18'
+#echo $LIST
+for n in "${LIST[@]}"; do
+        /usr/libexec/rancid/vdxlogin -autoenable -t 40 -c "show ip int br;exit" $n >$DIR/$n-new
+        value=$( diff $DIR/$n $DIR/$n-new| wc -l )
+        if [ $value -eq 0 ]
+                then
+                        echo "No difference for $n"
+                else
+                        diff $DIR/$n $DIR/$n-new
+        fi
+done

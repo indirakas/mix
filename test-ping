@@ -1,0 +1,33 @@
+#!/bin/bash
+declare -A SWITCH
+#SWITCH='name1'
+#SWITCH='name2'
+#SWITCH='name3'
+
+#SWITCH='osf'
+SWITCH='crt'
+IPLIST="/data/tftpboot/ping/$SWITCH"
+for i in {1..100}
+do
+echo""
+echo "---------Starting $i ping round-------"
+echo""
+for ip in $(cat $IPLIST)
+
+do
+    ping $ip -c 1 &> /dev/null
+    if [ $? -ne 0 ]; then
+
+        echo $ip FAIL;
+
+        else
+
+        echo $ip OK;
+
+    fi
+
+done
+echo""
+echo "---------End of $i round-------"
+sleep 2
+done

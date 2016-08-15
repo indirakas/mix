@@ -68,13 +68,13 @@ switch-attributes {{r+data.rbridge_start}}
 {% endfor %}
 no support autoupload enable
 support ffdc
-snmp-server contact net@nersc.gov
+snmp-server contact foo@bar.com
 snmp-server location "End User Premise."
 snmp-server sys-descr "Brocade VDX Switch."
 {%if data.version == "5.0.2a" %}
 snmp-server enable trap
-snmp-server community c0m3l00katm3 groupname user
-snmp-server community fe3lmyp0w3r groupname admin
+snmp-server community blah groupname user
+snmp-server community blah1 groupname admin
 snmp-server view All 1 included
 snmp-server group admin v1 read All write All notify All
 snmp-server group admin v2c read All write All notify All

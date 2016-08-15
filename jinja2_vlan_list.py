@@ -80,7 +80,7 @@ def main():
         if vendor == "cisco":
                 cisco_switch=SwitchData()
                 template = ENV.get_template("base-config.j2")
-                vlan_list=[2001,2002,2003,2004,2005,2006]
+                vlan_list=[10,20,30,40,50]
                 cisco_switch.hostname=raw_input("Enter a switch hostname: ")
                 cisco_switch.hostname=exception(cisco_switch.hostname,\
                                                 regex.match(cisco_switch.hostname),\
@@ -112,9 +112,9 @@ def main():
                 vdx_switch=BrocadeSwitchData()
                 template = ENV.get_template("base-config_brocade_vlan_rbstart.j2")
                 version_list=["4.1.3c","5.0.2a"]
-                ivlan_list=[136,143,144,152,160,168]
-                pvlan_list=[193,196,197,198,200,202,203,204,205,209,210,224]
-                rvlan_list=[194,195,196,211,216,2181,2182,2183,2184]
+                ivlan_list=[1,2,3]
+                pvlan_list=[11,22,33]
+                rvlan_list=[111,222,333]
                 vdx_switch.version=raw_input("Enter the switch version: ")
                 vdx_switch.version=exception(vdx_switch.version,\
                                              vdx_switch.version in version_list or vdx_switch.version.strip("nos") in version_list,\

@@ -1,3 +1,14 @@
+# Script to track the inbound and outbound traffic rate on given interface, using the SNMP data, such as:
+# Where:
+#       community string:       text string of the read-only community string, configured on the device
+#       interface index:        integer value, obtained by snmpget
+#       hostname of the device: device FQDN or IP address
+#       time:                   timeinterval to pull speed information
+#       out:                    outbound speed value
+#       in:                     inbound speed value
+#       pipe:                   interface speed (1G/10G/40G/100G)
+# 
+# setup variables
 DIR='/home/indira/snmp-data'
 community_string='blah'
 hostname=foo.bar.com
@@ -7,7 +18,7 @@ IN=$(snmpget -v2c -c $community_string $hostname ifInOctets.$INTNUMBER | awk '{p
 SPEED=$(snmpget -v2c -c $community_string $hostname ifHighSpeed.$INTNUMBER | awk '{print $4}')
 TIME=5
 echo $OUT $IN $SPEED
-#SPEED=$speed
+#10G interface
 PIPE=10000000
 
         if [ -z "$OUT" ] || [ -z "$IN" ]; then

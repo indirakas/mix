@@ -1,12 +1,17 @@
 #!/usr/local/bin/bash
-declare -A LIST
-DIR='/var/tmp/diffs'
+# This script is used to identify possible end-user port status change on the switch. It has to be executed after any change was made
+# If there is no difference to the interface status, it will print "No difference for $end-host-name"
 
+declare -A LIST
+#this folder contains files for each switch-name with initial "show ip int br" command output
+DIR='/var/tmp/diffs'
+#list of Brocade switches
 LIST[0]='name1'
 LIST[1]='name2'
 LIST[18]='name18'
 #echo $LIST
 for n in "${LIST[@]}"; do
+        #creates new files (*-new) with updated "show ip int br" command output and compates 2 files for any possible change
         /usr/libexec/rancid/vdxlogin -autoenable -t 40 -c "show ip int br;exit" $n >$DIR/$n-new
         value=$( diff $DIR/$n $DIR/$n-new| wc -l )
         if [ $value -eq 0 ]

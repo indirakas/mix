@@ -1,0 +1,99 @@
+import json
+import gspread
+import codecs
+import re
+from slacker import Slacker
+from oauth2client.client import  SignedJwtAssertionCredentials
+
+
+def write(hostname,output):
+    try:
+        with codecs.open("%s.json"% hostname, "wb","utf-8") as f:
+            f.write(output)
+            f.close()
+    except IOError:
+        print "Can\'t find file or read data"
+    else:
+        print "Written content to the file %s successfully" % hostname
+    return output
+
+def rancid_data ():
+    d=[]
+    dx={}
+    tempodx=[]
+    fo=open("/Users/user/Documents/osf-test.txt","rw")
+
+    for i,line in enumerate(fo):
+        if not (re.match('\r?\n',line)):
+            line=fo.next()
+            tempodx=line.split(':')
+            dx[tempodx[0]]=tempodx[1:]
+
+            d.append(dx.copy())
+            
+    json_data=json.dumps(d)
+    json_data=write("randid-database.txt",json)
+    fo.close()
+
+def slack():
+    
+    
+    slack=Slacker("xoxb-...")
+    slack.chat.post_message('#channel',\
+                            'The database is formed',\
+                            username='@supermicro',\
+                            as_user=True, \
+                            icon_emoji=":sailboat:")
+
+def main():
+    json_key=json.load(open('/Users/user/Downloads/Python-xxx.json'))
+    scope = ['https://spreadsheets.google.com/feeds']
+    credentials = SignedJwtAssertionCredentials(json_key['client_email'],\
+                                                json_key['private_key'], scope)
+    gc = gspread.authorize(credentials)
+    crt = gc.open('Centerwide Address Map')
+    pas = gc.open('Password rollout')
+    crtsh=crt.worksheet('Management')
+    passh=pas.worksheet("Sheet1")
+    d=[]
+
+    for i in passh.col_values(5):
+        dx={}
+        dx["hostname"]=i
+        cell=passh.find(i)
+        print i
+        for z in crtsh.col_values(2):
+            if i==z:
+            
+                dx["ip"]=str(crtsh.col_values(1)[crtsh.col_values(2).index(z)])
+            
+                passh.update_cell(cell.row,\
+                                  cell.col+1,\
+                                  str(crtsh.col_values(1)[crtsh.col_values(2).index(z)]))
+            
+           
+                break
+            else:
+                dx["ip"]="%s.nersc.gov" %i
+    
+        dx["bldg"]="CRT"
+        d.append(dx.copy())
+        json_data=json.dumps(d)
+        print json_data
+    
+    
+    for i in passh.col_values(1):
+        dx={}
+        cell=passh.find(i)
+        print i
+        dx["hostname"]=i
+        dx["ip"]="%s.nersc.gov" %i
+        passh.update_cell(cell.row,cell.col+1,"%s.nersc.gov" %i)
+        dx["bldg"]="OSF"
+        d.append(dx.copy())
+        json_data=json.dumps(d)
+        print json_data
+
+
+    json_data=write("traffic",json_data)
+    slack()
